@@ -1,0 +1,46 @@
+import csv
+
+# 1.读取csv函数
+def read_vocab(filepath):
+    word_list = []
+    使用 打开(文件路径, 编码="utf-8") 作为 f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            word_list.append(row)
+    返回词列表
+
+# 2.筛选函数：按HSK等级、词性筛选【作业1：列表推导式】
+def filter_vocab(word_list, target_hsk, target_pos):
+    # 作业1：使用列表推导式简化筛选
+    res = [w for w in word_list if w["HSK等级"] == target_hsk and w["词性"] == target_pos]
+    return res
+
+# 3.统计函数
+def count_info(word_list):
+    total = len(word_list)
+    pos_dict = {}
+    for word in word_list:
+        pos = word["词性"]
+        如果 pos 在 pos_dict 中：
+            pos_dict[pos] += 1
+        else:
+            pos_dict[pos] = 1
+    return total, pos_dict
+
+# 4.【作业2B新增】生成填空题并写入txt
+def write_fill_blank_exercise(word_list, out_path):
+    lines = []
+    for w in word_list:
+        行。追加(f"用 ___ 造一个句子。({w['词性']})")
+    使用 打开(out_path, "w", encoding="utf-8") 作为 f:
+        f.write("\n".join(lines))
+    return lines
+
+# =========主程序=========
+如果 __name__ == "__main__":
+    词汇数据 = 读取词汇表("data/生词表.csv")
+    过滤后的结果 = 过滤词汇表(词汇数据, "4", "动词")
+    total_num, pos_count = count_info(filtered)
+    print(f"总词汇{total_num}个，词性分布：{pos_count}")
+    write_fill_blank_exercise(filtered, "练习.txt")
+    print("✅填空题练习.txt 生成完成！")
