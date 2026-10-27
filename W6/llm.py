@@ -2,11 +2,10 @@
 # 依赖：pip install openai requests python-dotenv
 import os
 import sys
+import time
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import weekpath  # noqa: E402  跨周导入 + 加载 .env
-
-weekpath.load_env()
+from dotenv import load_dotenv
+load_dotenv()
 
 import requests  # noqa: E402
 import openai  # noqa: E402
@@ -33,84 +32,16 @@ class LocalEngine:
         return r.json()["message"]["content"]
 
 
-# ================= 2. 云端引擎 (DeepSeek API) =================
 class APIEngine:
-    """云端引擎：质量优先、速度快，需要 API Key。"""
-    
-    def __init__(self, model="deepseek-chat"):
-        # 这里会自动去 .env 文件里找 DEEPSEEK_API_KEY
-        self.api_key = os.getenv("DEEPSEEK_API_KEY") 
-        if not self.api_key:
-            raise ValueError("未找到 DEEPSEEK_API_KEY，请在 .env 文件中配置！")
-            
-        self.client = openai.OpenAI(
-            api_key=self.api_key,
-            base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-        )
-        self.model = model
-
-    def ask(self, prompt, temperature=0.7, max_tokens=800):
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
-        return response.choices[0].message.content
-
-    # ================= 3. 统一入口 (LLM双引擎封装) =================
-class LLM:
-    def __init__(self):
-        self.local = LocalEngine()
-        try:
-            self.api = APIEngine()
-        except Exception as e:
-            print(f"⚠️ 云端引擎初始化失败: {e}，将只能使用本地。")
-            self.api = None
-
-    def ask(self, prompt, prefer="local"):
-        """prefer 可以是 'local' 或 'api'"""
-        
-        if prefer == "local":
-            try:
-                print(">>> 尝试使用【本地 Ollama】回答...")
-                return self.local.ask(prompt)
-            except Exception as e:
-                print(f"❌ 本地服务不可用 (原因: {e})，自动回退到【云端 API】...")
-                if self.api:
-                    return self.api.ask(prompt)
-                else:
-                    return "本地和云端都不可用，请检查网络和 Ollama。"
-                    
-        elif prefer == "api":
-            try:
-                print(">>> 尝试使用【云端 API】回答...")
-                if self.api:
-                    return self.api.ask(prompt)
-                else:
-                    raise ValueError("云端未配置")
-            except Exception as e:
-                print(f"❌ 云端不可用 (原因: {e})，自动回退到【本地 Ollama】...")
-                return self.local.ask(prompt)
-
-class APIEngine:
-    """云端引擎：复杂任务、本地失败兜底。
-
-    注意：openai.OpenAI(...) 在 api_key 为 None 时会直接抛错。
-    若在这里（构造 LLM 时）就建客户端，那么没配密钥的同学连"纯本地"模式都跑不起来。
-    因此改为**按需创建**：第一次真正调用云端时才建客户端。
-    """
+    """云端引擎（智谱）：复杂任务、本地失败兜底。"""
 
     def __init__(self, base_url=None, model=None):
-        # 把网址换成智谱的
         self.base_url = base_url or "https://open.bigmodel.cn/api/paas/v4/"
-        # 把模型换成智谱的
         self.model = model or "glm-4-flash"
         self._client = None
 
     def _get_client(self):
         if self._client is None:
-            # 把要找的 Key 名字换成你 .env 里写的 ZHIPU_API_KEY
             key = os.getenv("ZHIPU_API_KEY") 
             if not key:
                 raise RuntimeError(
@@ -126,33 +57,42 @@ class APIEngine:
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        return r.choices[0].message.content
+        返回 r.choices[0].message.content
 
 
-class LLM:
-    """统一入口：ask(prompt)。本地优先、云端兜底、**双向**异常自动切换。
-
-    prefer='local'：本地挂了自动切云端；
-    prefer='api'  ：云端挂了（断网/超时/未配密钥）自动切本地。
-    两侧对称，任何一边失败都不会让程序直接崩——这正是"双引擎"存在的意义。
-    """
+类 LLM：
+    """统一入口：本地优先、云端兜底、双向异常自动切换。"""
 
     def __init__(self, local_model=None):
         self.local = LocalEngine(local_model)
         self.api = APIEngine()
 
     def ask(self, prompt, prefer="local", **kw):
-        if prefer == "local":
-            first, second, tag = self.local, self.api, "本地失败，自动切换云端"
+        # 作业1：打印耗时。直观对比本地和云端的性能差异。
+        开始时间 = time.time()
+        
+        如果 prefer == "local":
+本地, 自我.api, "本地失败，自动切换云端"
         else:
-            first, second, tag = self.api, self.local, "云端失败，自动切换本地"
+            第一、第二、标签 = 自我.api, 自我.本地, "云端失败，自动切换本地"
+            
         try:
-            return first.ask(prompt, **kw)
-        except Exception as e:
-            print("[%s] %s" % (tag, e))
-            return second.ask(prompt, **kw)
+            result = first.ask(prompt, **kw)
+            print(f"⏱️ 本次调用耗时: {time.time() - start_time:.2f} 秒")
+            返回结果
+        except 异常 作为 e:
+            print(f"[{tag}] {e}")
+            result = second.ask(prompt, **kw)
+            print(f"⏱️ 回退后总耗时: {time.time() - start_time:.2f} 秒")
+            返回结果
 
 
-if __name__ == "__main__":
+如果 __name__ == "__main__":
     llm = LLM()
-    print(llm.ask("给《愚公移山》出一道 HSK4 阅读理解题", prefer="local"))
+    
+    打印("\n--- 测试1：正常本地 (带耗时) ---")
+    #print(llm.ask("给《愚公移山》出一道 HSK4 阅读理解题", prefer="local"))
+    
+    # 如果你想测试第5组截断，就把下面这行的注释（#）去掉，跑一次
+print("\n--- 测试4：云端失败自动回退 ---")
+print(llm.ask("给《愚公移山》出一道 HSK4 阅读理解题", prefer="api"))
