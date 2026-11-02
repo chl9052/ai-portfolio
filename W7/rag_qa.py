@@ -5,17 +5,16 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import weekpath  # noqa: E402  数据路径 + 加载 .env
-
-weekpath.load_env()
+from dotenv import load_dotenv
+load_dotenv()
 
 from langchain_community.document_loaders import TextLoader  # noqa: E402
 from langchain_text_splitters import RecursiveCharacterTextSplitter  # noqa: E402
 from langchain_ollama import OllamaEmbeddings  # noqa: E402
 from langchain_chroma import Chroma  # noqa: E402
 
-CORPUS = weekpath.data_path("等级标准节选.txt")      # 不再依赖当前工作目录
-PERSIST = weekpath.root_path("chroma_db")            # .gitignore 已排除
+CORPUS =  "等级标准节选.txt"    # 不再依赖当前工作目录
+PERSIST = "chroma_db"          # .gitignore 已排除
 
 _retriever = None
 
