@@ -57,10 +57,10 @@ class APIEngine:
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        返回 r.choices[0].message.content
+        return r.choices[0].message.content
 
 
-类 LLM：
+class LLM:
     """统一入口：本地优先、云端兜底、双向异常自动切换。"""
 
     def __init__(self, local_model=None):
@@ -69,28 +69,28 @@ class APIEngine:
 
     def ask(self, prompt, prefer="local", **kw):
         # 作业1：打印耗时。直观对比本地和云端的性能差异。
-        开始时间 = time.time()
+        start_time = time.time()
         
-        如果 prefer == "local":
-本地, 自我.api, "本地失败，自动切换云端"
+        if prefer == "local":
+            first, second, tag = self.local, self.api, "本地失败，自动切换云端"
         else:
-            第一、第二、标签 = 自我.api, 自我.本地, "云端失败，自动切换本地"
+            first, second, tag = self.api, self.local, "云端失败，自动切换本地"
             
         try:
             result = first.ask(prompt, **kw)
             print(f"⏱️ 本次调用耗时: {time.time() - start_time:.2f} 秒")
-            返回结果
-        except 异常 作为 e:
+            return result
+        except Exception as e:
             print(f"[{tag}] {e}")
             result = second.ask(prompt, **kw)
             print(f"⏱️ 回退后总耗时: {time.time() - start_time:.2f} 秒")
-            返回结果
+            return result
 
 
-如果 __name__ == "__main__":
+if __name__ == "__main__":
     llm = LLM()
     
-    打印("\n--- 测试1：正常本地 (带耗时) ---")
+    print("\n--- 测试1：正常本地 (带耗时) ---")
     #print(llm.ask("给《愚公移山》出一道 HSK4 阅读理解题", prefer="local"))
     
     # 如果你想测试第5组截断，就把下面这行的注释（#）去掉，跑一次
