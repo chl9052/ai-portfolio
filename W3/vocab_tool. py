@@ -18,13 +18,12 @@ def filter_vocab(word_list, target_hsk, target_pos):
 # 3. 统计函数
 def count_info(word_list):
     total_count = len(word_list)
-    # 简单统计一下不同等级的词
     levels = {}
     for w in word_list:
         level = w.get("HSK等级", "未知")
         levels[level] = levels.get(level, 0) + 1
-    return total_words, levels
+    return total_count, levels
 
 # 测试代码
 if __name__ == "__main__":
-    print("词汇工具已就绪！")
+    print("生词工具已就绪！")
