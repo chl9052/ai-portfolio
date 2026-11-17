@@ -11,7 +11,6 @@ def read_vocab(filepath):
 
 # 2. 筛选函数：按HSK等级、词性筛选
 def filter_vocab(word_list, target_hsk, target_pos):
-    # 使用列表推导式简化筛选
     res = [w for w in word_list if w["HSK等级"] == target_hsk and w["词性"] == target_pos]
     return res
 
@@ -24,6 +23,5 @@ def count_info(word_list):
         levels[level] = levels.get(level, 0) + 1
     return total_count, levels
 
-# 测试代码
 if __name__ == "__main__":
     print("生词工具已就绪！")
